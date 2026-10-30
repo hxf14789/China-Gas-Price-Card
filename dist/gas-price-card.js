@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.3";
+const GP_VERSION = "v1.0.5";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -46,15 +46,18 @@ const BASE_CSS = `
 .title{font-size:21px;font-weight:800;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .subtitle{font-size:12.5px;color:var(--gp-muted);margin-top:3px;display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--gp-accent);box-shadow:0 0 0 3px rgba(26,161,121,.18)}
-.refresh{appearance:none;border:none;cursor:pointer;flex-shrink:0;
-  background:rgba(128,128,128,.16);color:var(--gp-text);border-radius:11px;
-  width:40px;height:40px;font-size:18px;display:flex;align-items:center;justify-content:center;
+.refresh{appearance:none;border:none;cursor:pointer;flex:0 0 auto;padding:0;
+  background:rgba(128,128,128,.16);color:var(--gp-text);
+  width:42px;height:42px;min-width:42px;min-height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;line-height:0;
   transition:background .15s,transform .15s;-webkit-tap-highlight-color:transparent}
 .refresh:hover{background:rgba(128,128,128,.26)}
 .refresh:active{transform:scale(.92)}
-.refresh .ri{display:inline-block;line-height:1}
+/* 图标：SVG 对称图形，旋转中心恒为自身几何中心，不会偏移 */
+.refresh .ri{display:block;flex:0 0 auto;width:24px;height:24px;margin:0;
+  transform-origin:50% 50%;transform-box:view-box;will-change:transform}
 .refresh.spin .ri{animation:gp-spin .8s linear infinite}
-@keyframes gp-spin{to{transform:rotate(360deg)}}
+@keyframes gp-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* 价格网格 */
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
@@ -86,15 +89,17 @@ const BASE_CSS = `
   white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
 .cell .val.warn{color:var(--gp-up)}
 
-.foot{display:flex;justify-content:space-between;align-items:center;
+.foot{display:flex;justify-content:flex-start;align-items:center;
   margin-top:14px;font-size:11.5px;color:var(--gp-muted)}
-.foot .v{opacity:.6}
 
 .empty{padding:22px;text-align:center;color:var(--gp-muted);font-size:13px}
 
 @media(max-width:430px){
   .grid{grid-template-columns:repeat(2,1fr)}
   .panel{grid-template-columns:1fr}
+  /* 移动端保持与桌面端完全一致的按钮/图标尺寸比例，不缩放 */
+  .refresh{width:42px;height:42px;min-width:42px;min-height:42px}
+  .refresh .ri{width:24px;height:24px}
 }
 `;
 
@@ -119,14 +124,28 @@ function gpFmt(v, digits = 2) {
   if (v === null || v === undefined || !Number.isFinite(v)) return "--";
   return v.toFixed(digits);
 }
+/* 清洗地区名：去掉「今日油价」「油价」等重复前缀与多余分隔符
+ * 例：'油价-江苏' → '江苏'；'今日油价：江苏' → '江苏'；'江苏' → '江苏'
+ */
+function gpCleanRegion(s) {
+  if (!s) return "";
+  let t = String(s).trim();
+  const pre = /^(今日油价|油价行情|油价查询|最新油价|油价|地区名称|地区|名称)\s*[-–—－_·:：|/、]?\s*/;
+  for (let i = 0; i < 5 && pre.test(t); i++) t = t.replace(pre, "");
+  return t.replace(/^[-–—－_·:：|/、\s]+/, "").replace(/[-–—－_·:：|/、\s]+$/, "").trim();
+}
 function gpRegionName(hass, acc) {
-  // 优先用独立实体，否则用第一个油价实体的 friendly_name 属性
-  const direct = gpStr(hass, gpSensorOf(acc, "friendly_name"));
+  // 地区名以 sensor.<key>_friendly_name 为准（集成里的地区实体）
+  const direct = gpCleanRegion(gpStr(hass, gpSensorOf(acc, "friendly_name")));
   if (direct) return direct;
+  // 兜底：从 92#/95# 实体的 friendly_name 属性里剥离油品名
   const probe = hass.states[gpSensorOf(acc, "gas92")] || hass.states[gpSensorOf(acc, "gas95")];
   const attr = probe && probe.attributes && probe.attributes.friendly_name;
-  if (attr) return String(attr).replace(/92#汽油|95#汽油|98#汽油|0#柴油/g, "").trim() || String(attr);
-  return acc.name || "本地区";
+  if (attr) {
+    const cleaned = gpCleanRegion(String(attr).replace(/92#汽油|95#汽油|98#汽油|0#柴油|汽油|柴油/g, ""));
+    if (cleaned) return cleaned;
+  }
+  return gpCleanRegion(acc.name) || "本地区";
 }
 function gpTrendInfo(text) {
   const t = (text || "").toLowerCase();
@@ -249,11 +268,15 @@ class GasPriceCard extends HTMLElement {
           <div class="brand">
             <div class="logo">⛽</div>
             <div style="min-width:0">
-              <div class="title">${region} · 今日油价</div>
-              <div class="subtitle"><span class="dot"></span>实时油价一览 ${GP_VERSION}</div>
+              <div class="title">今日油价-${region}</div>
+              <div class="subtitle"><span class="dot"></span>实时油价一览 · ${GP_VERSION}</div>
             </div>
           </div>
-          <button class="refresh" title="立即更新" aria-label="立即更新"><span class="ri">⟳</span></button>
+          <button class="refresh" title="立即更新" aria-label="立即更新">
+            <svg class="ri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
         </div>
 
         <div class="grid">${tiles}</div>
@@ -272,7 +295,6 @@ class GasPriceCard extends HTMLElement {
 
         <div class="foot">
           <span>更新时间：${updateTime || "--"}</span>
-          <span class="v">${GP_VERSION}</span>
         </div>
       </div>`;
 
