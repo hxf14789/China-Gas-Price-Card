@@ -70,24 +70,23 @@ name: 江苏                 # 标题（可选）</pre>
     // —— 模拟 Home Assistant 的 hass 对象 ——
     function buildHass(trendMode) {
       const trendMap = {
-        up:   { state: "预计上涨", tips: "预计上调 0.10~0.12 元/升" },
-        down: { state: "预计下调", tips: "预计下调 0.08~0.10 元/升" },
-        flat: { state: "搁浅",     tips: "本轮调价搁浅，不作调整" },
+        up:   { state: "上涨", tips: "10月29日油价调整最新消息：92号汽油上涨0.27元/升，95号汽油上涨0.28元/升，0号柴油上涨0.29元/升。" },
+        down: { state: "下跌", tips: "本轮油价下调：92号汽油下跌0.12元/升，95号汽油下跌0.13元/升，0号柴油下跌0.11元/升。" },
+        flat: { state: "搁浅", tips: "本轮调价窗口开启，油价搁浅不作调整。" },
       };
       const t = trendMap[trendMode];
       const s = (id, state, attrs) => ({ entity_id: id, state: String(state), attributes: attrs || {} });
       const K = "you_jie_jiang_su";
       return {
         states: {
-          [`sensor.${K}_gas92`]:        s(`sensor.${K}_gas92`, "7.85", { friendly_name: "江苏 92#汽油", unit_of_measurement: "元/升" }),
-          [`sensor.${K}_gas95`]:        s(`sensor.${K}_gas95`, "8.35", { friendly_name: "江苏 95#汽油", unit_of_measurement: "元/升" }),
-          [`sensor.${K}_gas98`]:        s(`sensor.${K}_gas98`, "9.68", { friendly_name: "江苏 98#汽油", unit_of_measurement: "元/升" }),
-          [`sensor.${K}_die0`]:         s(`sensor.${K}_die0`,  "7.50", { friendly_name: "江苏 0#柴油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_gas92`]:        s(`sensor.${K}_gas92`, "8.85", { friendly_name: "江苏 92#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_gas95`]:        s(`sensor.${K}_gas95`, "9.41", { friendly_name: "江苏 95#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_gas98`]:        s(`sensor.${K}_gas98`, "11.48", { friendly_name: "江苏 98#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_die0`]:         s(`sensor.${K}_die0`,  "8.55", { friendly_name: "江苏 0#柴油", unit_of_measurement: "元/升" }),
           [`sensor.${K}_trend`]:        s(`sensor.${K}_trend`, t.state),
-          [`sensor.${K}_time`]:         s(`sensor.${K}_time`,  "距下次调价 3 天"),
-          [`sensor.${K}_next_adjust_date`]: s(`sensor.${K}_next_adjust_date`, "2024-08-08"),
+          [`sensor.${K}_time`]:         s(`sensor.${K}_time`,  "油价下次调价时间为2026年11月12日 24:00"),
           [`sensor.${K}_tips`]:         s(`sensor.${K}_tips`,  t.tips),
-          [`sensor.${K}_update_time`]:  s(`sensor.${K}_update_time`, "2024-08-05 09:30"),
+          [`sensor.${K}_update_time`]:  s(`sensor.${K}_update_time`, "2026-10-31 02:18:03"),
           [`sensor.${K}_friendly_name`]:s(`sensor.${K}_friendly_name`, "江苏"),
           [`button.${K}_refresh`]:      s(`button.${K}_refresh`, "unknown"),
         },
