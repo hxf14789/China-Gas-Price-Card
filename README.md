@@ -1,6 +1,6 @@
 # 中国油价一览卡片（China Gas Price Card）
 
-Home Assistant 自定义 Lovelace 卡片，把「油捷 / you_jie」等油价集成里的汽油、柴油价格、调价趋势与下次调价时间，整理成一张精美的一览表。
+Home Assistant 自定义 Lovelace 卡片，把「油价 / you_jie」等油价集成里的汽油、柴油价格、调价趋势与下次调价时间，整理成一张精美的一览表。
 
 > ⚠️ **前置条件**：本卡片只是**展示层**，本身不获取数据。使用前请先在 Home Assistant 中装好油价集成（实体形如 `sensor.you_jie_<地区>_gas92`）。
 
