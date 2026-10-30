@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.0";
+const GP_VERSION = "v1.0.3";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -32,7 +32,7 @@ const BASE_CSS = `
   --gp-flat:#2f8fd6;      /* 搁浅 → 蓝 */
   box-sizing:border-box;background:var(--gp-bg);
   border:1px solid var(--gp-line);border-radius:22px;padding:20px;
-  width:100%;min-width:0;color:var(--gp-text);
+  width:100%;min-width:0;overflow:hidden;color:var(--gp-text);
   font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
   font-size:15px;line-height:1.45;
 }
@@ -52,13 +52,14 @@ const BASE_CSS = `
   transition:background .15s,transform .15s;-webkit-tap-highlight-color:transparent}
 .refresh:hover{background:rgba(128,128,128,.26)}
 .refresh:active{transform:scale(.92)}
-.refresh.spin{animation:gp-spin .8s linear infinite}
+.refresh .ri{display:inline-block;line-height:1}
+.refresh.spin .ri{animation:gp-spin .8s linear infinite}
 @keyframes gp-spin{to{transform:rotate(360deg)}}
 
 /* 价格网格 */
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
 .tile{position:relative;background:var(--gp-panel);border-radius:16px;padding:13px 10px 12px;
-  overflow:hidden;text-align:center}
+  overflow:hidden;text-align:center;min-width:0}
 .tile::before{content:"";position:absolute;left:0;top:0;right:0;height:4px;
   background:var(--gc,var(--gp-accent))}
 .tile .g{font-size:12.5px;color:var(--gp-muted);font-weight:600;letter-spacing:.3px}
@@ -67,21 +68,22 @@ const BASE_CSS = `
 .tile.diesel{--gc:#3aa0c4}
 
 /* 趋势条 */
-.trend{display:flex;align-items:center;gap:10px;margin-top:14px;
+.trend{display:flex;align-items:center;gap:10px;margin-top:14px;min-width:0;
   background:var(--gp-panel);border-radius:14px;padding:11px 14px}
 .trend .chip{font-size:13px;font-weight:800;padding:4px 11px;border-radius:20px;white-space:nowrap;
-  color:#fff;background:var(--gp-flat);display:inline-flex;align-items:center;gap:5px}
+  color:#fff;background:var(--gp-flat);display:inline-flex;align-items:center;gap:5px;flex-shrink:0}
 .trend .chip.up{background:var(--gp-up)}
 .trend .chip.down{background:var(--gp-down)}
-.trend .tip{font-size:13px;color:var(--gp-muted);line-height:1.4;min-width:0;overflow:hidden}
+.trend .tip{flex:1 1 auto;font-size:13px;color:var(--gp-muted);line-height:1.45;min-width:0;
+  overflow:hidden;overflow-wrap:anywhere}
 .trend .tip b{color:var(--gp-text);font-weight:700}
 
-/* 调价信息面板 */
-.panel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.cell{background:var(--gp-panel);border-radius:14px;padding:11px 13px}
+/* 调价信息面板（上下两行，各占满整行） */
+.panel{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+.cell{background:var(--gp-panel);border-radius:14px;padding:11px 13px;min-width:0;overflow:hidden}
 .cell .lab{font-size:12px;color:var(--gp-muted)}
-.cell .val{font-size:16px;font-weight:700;margin-top:4px;color:var(--gp-text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .val{font-size:15px;font-weight:700;margin-top:4px;color:var(--gp-text);line-height:1.4;
+  white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
 .cell .val.warn{color:var(--gp-up)}
 
 .foot{display:flex;justify-content:space-between;align-items:center;
@@ -139,6 +141,17 @@ function gpTrendInfo(text) {
   }
   return { cls: "flat", arrow: "━", label: text || "—" };
 }
+/* 清洗「下次调价」文本：去掉与标签重复的冗长前缀，只保留时间本体 */
+function gpCleanNextTime(s) {
+  if (!s) return s;
+  const cleaned = s
+    .replace(/^油价/, "")
+    .replace(/^下次调价时间(为)?/, "")
+    .replace(/^下次调价(为)?/, "")
+    .replace(/^为/, "")
+    .trim();
+  return cleaned || s;
+}
 
 /* ============== 卡片类 ============== */
 class GasPriceCard extends HTMLElement {
@@ -173,7 +186,7 @@ class GasPriceCard extends HTMLElement {
     if (!this._hass || !this._config) return "";
     const acc = this._config;
     const keys = ["gas92", "gas95", "gas98", "die0", "trend", "time",
-      "next_adjust_date", "tips", "update_time", "friendly_name"];
+      "tips", "update_time", "friendly_name"];
     return [acc.key, ...keys.map((k) => gpStr(this._hass, gpSensorOf(acc, k)) ?? "")].join("|");
   }
 
@@ -206,8 +219,7 @@ class GasPriceCard extends HTMLElement {
     const trendRaw = gpStr(hass, gpSensorOf(acc, "trend"));
     const trend = gpTrendInfo(trendRaw);
     const tips = gpStr(hass, gpSensorOf(acc, "tips"));
-    const nextDate = gpStr(hass, gpSensorOf(acc, "next_adjust_date"));
-    const nextTime = gpStr(hass, gpSensorOf(acc, "time"));
+    const nextTime = gpCleanNextTime(gpStr(hass, gpSensorOf(acc, "time")));
     const updateTime = gpStr(hass, gpSensorOf(acc, "update_time"));
 
     const tiles = [
@@ -241,7 +253,7 @@ class GasPriceCard extends HTMLElement {
               <div class="subtitle"><span class="dot"></span>实时油价一览 ${GP_VERSION}</div>
             </div>
           </div>
-          <button class="refresh" title="立即更新" aria-label="立即更新">⟳</button>
+          <button class="refresh" title="立即更新" aria-label="立即更新"><span class="ri">⟳</span></button>
         </div>
 
         <div class="grid">${tiles}</div>
@@ -255,10 +267,6 @@ class GasPriceCard extends HTMLElement {
           <div class="cell">
             <div class="lab">下次调价</div>
             ${nextTimeHtml}
-          </div>
-          <div class="cell">
-            <div class="lab">调价日期</div>
-            <div class="val">${nextDate || "--"}</div>
           </div>
         </div>
 
