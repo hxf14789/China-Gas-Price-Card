@@ -27,7 +27,7 @@ Home Assistant 自定义 Lovelace 卡片，把「油价 / you_jie」等油价集
 
 ### HACS（推荐）
 
-1. HACS → 前端 → 右上角 ⋮ → **自定义存储库**
+1. HACS → 前端 → 右上角 ⋮ → **https://github.com/hxf14789/China-Gas-Price-Card**
 2. 填入本仓库地址，类别选择 **仪表盘**
 3. 搜索「China Gas Price Card」→ 下载
 4. 刷新页面（必要时重启 HA 或强制刷新浏览器缓存）
