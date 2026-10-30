@@ -19,7 +19,8 @@ Home Assistant 自定义 Lovelace 卡片，把「油捷 / you_jie」等油价集
 - **四宫格油价**：92# / 95# / 98# 汽油 + 0# 柴油，大字号展示「元/升」
 - **调价趋势**：根据 `trend` 实体自动着色（**涨=红、跌=绿、搁浅=蓝**，符合国内习惯）并显示箭头
 - **下次调价**：展示下次调价时间（`time`）与调价提示（`tips`）
-- **一键刷新**：点击右上角 ⟳ 调用 `button.<key>_refresh` 立即更新
+- **一键刷新**：点击右上角刷新图标（矢量 SVG，任意端同尺寸、绕几何中心旋转不偏移）调用 `button.<key>_refresh` 立即更新
+- **标题格式**：固定为「今日油价-地区」，地区名取自 `sensor.<key>_friendly_name` 的状态值，例如值为 `油价-江苏` 时标题显示 `今日油价-江苏`（自动剥离重复的「油价」「今日油价」前缀与分隔符）
 - **深浅色自适应**：跟随 Home Assistant 主题（读取 `--ha-card-background` 等主题变量）
 - 实体缺失时优雅显示 `--`，不会报错
 
@@ -73,7 +74,7 @@ refresh_entity: button.you_jie_jiang_su_refresh
 | 参数 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `key` | string | 是 | 实体前缀，卡片据此拼出 `sensor.<key>_gas92` 等 |
-| `name` | string | 否 | 卡片标题，缺省时读 `friendly_name` 属性/实体 |
+| `name` | string | 否 | 地区名兜底值；正常情况地区名取自 `sensor.<key>_friendly_name` |
 | `entities` | map | 否 | 逐条覆盖实体 ID（键见上表） |
 | `refresh_entity` | string | 否 | 刷新按钮对应的实体，默认 `button.<key>_refresh` |
 
