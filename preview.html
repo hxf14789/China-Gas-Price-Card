@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国油价一览卡片 · 预览</title>
+<style>
+  :root{ --bg:#f4f6f8; --fg:#1c1f23; --muted:#6b7280; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--fg);padding:28px 16px 60px;line-height:1.5}
+  .top{max-width:980px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 4px;font-weight:800}
+  .lead{color:var(--muted);font-size:14px;margin:0 0 20px}
+  .bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:0 auto 22px;max-width:980px;
+    background:#fff;border:1px solid #e6e9ee;border-radius:14px;padding:12px 16px}
+  .bar label{font-size:13px;color:var(--muted);font-weight:600}
+  select{font-family:inherit;font-size:13px;border:1px solid #d7dce3;border-radius:9px;
+    padding:7px 10px;background:#fff;color:var(--fg);cursor:pointer}
+  .grid2{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .col h3{font-size:13px;color:var(--muted);margin:0 0 10px;font-weight:700;letter-spacing:.4px}
+  /* 模拟 HA 主题变量 */
+  .theme-light{--ha-card-background:#ffffff;--primary-text-color:#1c1f23;
+    --secondary-text-color:#6b7280;--secondary-background-color:#f1f3f5;background:#eef1f4;
+    border-radius:18px;padding:14px}
+  .theme-dark{--ha-card-background:#1c1f23;--primary-text-color:#e8e8e8;
+    --secondary-text-color:#9a9a9a;--secondary-background-color:#2a2a2a;background:#14161a;
+    border-radius:18px;padding:14px}
+  .yaml{max-width:980px;margin:26px auto 0;background:#0f172a;color:#e2e8f0;
+    border-radius:14px;padding:16px 18px;font-size:12.5px;line-height:1.7;overflow:auto}
+  .yaml h4{margin:0 0 8px;color:#7dd3fc;font-size:13px}
+  pre{margin:0;white-space:pre;font-family:"SFMono-Regular",Consolas,monospace}
+  .note{max-width:980px;margin:14px auto 0;font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>⛽ 中国油价一览卡片</h1>
+    <p class="lead">基于 hxf14789/State-Grid-Electricity-Card 的卡片骨架改造，适配你的 <code>sensor.you_jie_jiang_su_*</code> 油价实体。下方为浅色 / 深色主题实时预览（示例数据）。</p>
+  </div>
+
+  <div class="bar">
+    <label for="trend">趋势演示</label>
+    <select id="trend">
+      <option value="up">▲ 预计上涨（红）</option>
+      <option value="down">▼ 预计下跌（绿）</option>
+      <option value="flat">━ 搁浅（蓝）</option>
+    </select>
+    <span style="font-size:12px;color:var(--muted)">切换可观察趋势条配色；右上角 ⟳ 可模拟「立即更新」</span>
+  </div>
+
+  <div class="grid2">
+    <div class="col"><h3>浅色主题（跟随 HA 浅色）</h3><div class="theme-light" id="host-light"></div></div>
+    <div class="col"><h3>深色主题（跟随 HA 深色）</h3><div class="theme-dark" id="host-dark"></div></div>
+  </div>
+
+  <div class="yaml">
+    <h4>仪表盘配置（YAML）</h4>
+    <pre>type: custom:gas-price-card
+key: you_jie_jiang_su      # 实体前缀
+name: 江苏                 # 标题（可选）</pre>
+  </div>
+
+  <p class="note">说明：实体缺失时卡片显示 <code>--</code> 而不报错；价格单位「元/升」；涨=红、跌=绿、搁浅=蓝，符合国内习惯。</p>
+
+  <!-- 加载真实卡片本体（与 HACS 安装的同一文件） -->
+  <script src="dist/gas-price-card.js"></script>
+  <script>
+    // —— 模拟 Home Assistant 的 hass 对象 ——
+    function buildHass(trendMode) {
+      const trendMap = {
+        up:   { state: "预计上涨", tips: "预计上调 0.10~0.12 元/升" },
+        down: { state: "预计下调", tips: "预计下调 0.08~0.10 元/升" },
+        flat: { state: "搁浅",     tips: "本轮调价搁浅，不作调整" },
+      };
+      const t = trendMap[trendMode];
+      const s = (id, state, attrs) => ({ entity_id: id, state: String(state), attributes: attrs || {} });
+      const K = "you_jie_jiang_su";
+      return {
+        states: {
+          [`sensor.${K}_gas92`]:        s(`sensor.${K}_gas92`, "7.85", { friendly_name: "江苏 92#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_gas95`]:        s(`sensor.${K}_gas95`, "8.35", { friendly_name: "江苏 95#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_gas98`]:        s(`sensor.${K}_gas98`, "9.68", { friendly_name: "江苏 98#汽油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_die0`]:         s(`sensor.${K}_die0`,  "7.50", { friendly_name: "江苏 0#柴油", unit_of_measurement: "元/升" }),
+          [`sensor.${K}_trend`]:        s(`sensor.${K}_trend`, t.state),
+          [`sensor.${K}_time`]:         s(`sensor.${K}_time`,  "距下次调价 3 天"),
+          [`sensor.${K}_next_adjust_date`]: s(`sensor.${K}_next_adjust_date`, "2024-08-08"),
+          [`sensor.${K}_tips`]:         s(`sensor.${K}_tips`,  t.tips),
+          [`sensor.${K}_update_time`]:  s(`sensor.${K}_update_time`, "2024-08-05 09:30"),
+          [`sensor.${K}_friendly_name`]:s(`sensor.${K}_friendly_name`, "江苏"),
+          [`button.${K}_refresh`]:      s(`button.${K}_refresh`, "unknown"),
+        },
+        callService(domain, service, data) {
+          console.log("[mock] callService", domain, service, data);
+        },
+      };
+    }
+
+    function mount(hostId) {
+      const el = document.createElement("gas-price-card");
+      el.setConfig({ key: "you_jie_jiang_su", name: "江苏" });
+      document.getElementById(hostId).appendChild(el);
+      return el;
+    }
+
+    const lightEl = mount("host-light");
+    const darkEl  = mount("host-dark");
+
+    function refresh(trendMode) {
+      const hass = buildHass(trendMode);
+      lightEl.hass = hass;
+      darkEl.hass = hass;
+    }
+    refresh("up");
+
+    document.getElementById("trend").addEventListener("change", (e) => refresh(e.target.value));
+  </script>
+</body>
+</html>
