@@ -1,6 +1,6 @@
 # 中国油价一览卡片（China Gas Price Card）
 
-Home Assistant 自定义 Lovelace 卡片，把「油价 / you_jie」等油价集成里的汽油、柴油价格、调价趋势与下次调价时间，整理成一张精美的一览表。
+Home Assistant 自定义 Lovelace 卡片，把「油捷 / you_jie」等油价集成里的汽油、柴油价格、调价趋势与下次调价时间，整理成一张精美的一览表。
 
 > ⚠️ **前置条件**：本卡片只是**展示层**，本身不获取数据。使用前请先在 Home Assistant 中装好油价集成（实体形如 `sensor.you_jie_<地区>_gas92`）。
 
@@ -8,17 +8,17 @@ Home Assistant 自定义 Lovelace 卡片，把「油价 / you_jie」等油价集
 
 ## 效果图
 
-| 浅色主题（上涨） | 深色主题（下调） |
+| 浅色主题 | 深色主题 |
 |---|---|
-| ![浅色](card-light.png) | ![深色](card-dark-down.png) |
+| ![浅色](card-light.png) | ![深色](card-dark.png) |
 
-> 深色主题「上涨」配色见 `card-dark.png`，整页对比见 `preview-full.png`。
+> 移动端效果见 `card-mobile.png`，整页对比见 `preview-full.png`。
 
 ## 功能
 
 - **四宫格油价**：92# / 95# / 98# 汽油 + 0# 柴油，大字号展示「元/升」
 - **调价趋势**：根据 `trend` 实体自动着色（**涨=红、跌=绿、搁浅=蓝**，符合国内习惯）并显示箭头
-- **下次调价**：展示调价倒计时（`time`）与调价日期（`next_adjust_date`）、调价提示（`tips`）
+- **下次调价**：展示下次调价时间（`time`）与调价提示（`tips`）
 - **一键刷新**：点击右上角 ⟳ 调用 `button.<key>_refresh` 立即更新
 - **深浅色自适应**：跟随 Home Assistant 主题（读取 `--ha-card-background` 等主题变量）
 - 实体缺失时优雅显示 `--`，不会报错
@@ -27,7 +27,7 @@ Home Assistant 自定义 Lovelace 卡片，把「油价 / you_jie」等油价集
 
 ### HACS（推荐）
 
-1. HACS → 前端 → 右上角 ⋮ → **https://github.com/hxf14789/China-Gas-Price-Card**
+1. HACS → 前端 → 右上角 ⋮ → **自定义存储库**
 2. 填入本仓库地址，类别选择 **仪表盘**
 3. 搜索「China Gas Price Card」→ 下载
 4. 刷新页面（必要时重启 HA 或强制刷新浏览器缓存）
@@ -60,7 +60,6 @@ entities:
   die0:  sensor.you_jie_jiang_su_die0
   trend: sensor.you_jie_jiang_su_trend
   time:  sensor.you_jie_jiang_su_time
-  next_adjust_date: sensor.you_jie_jiang_su_next_adjust_date
   tips:  sensor.you_jie_jiang_su_tips
   update_time: sensor.you_jie_jiang_su_update_time
   friendly_name: sensor.you_jie_jiang_su_friendly_name
@@ -86,7 +85,6 @@ refresh_entity: button.you_jie_jiang_su_refresh
 | `die0` | 0# 柴油价格 |
 | `trend` | 油价趋势（涨/跌/搁浅） |
 | `time` | 下次调价倒计时 |
-| `next_adjust_date` | 调价日期 |
 | `tips` | 调价提示 |
 | `update_time` | 更新时间 |
 | `friendly_name` | 地区名称 |
