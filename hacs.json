@@ -1,0 +1,8 @@
+{
+  "name": "China Gas Price Card",
+  "render_readme": true,
+  "filename": "gas-price-card.js",
+  "content_in_root": false,
+  "homeassistant": "2023.8.0",
+  "hacs": "1.32.0"
+}
