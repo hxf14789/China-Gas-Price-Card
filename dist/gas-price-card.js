@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.8";
+const GP_VERSION = "v1.0.9";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -81,15 +81,15 @@ const BASE_CSS = `
   overflow:hidden;overflow-wrap:anywhere}
 .trend .tip b{color:var(--gp-text);font-weight:700}
 
-/* 底部信息条：下次调价（左） + 更新时间（右），屏幕允许时同一行、两端分布 */
-.foot2{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:6px 10px;
-  margin-top:14px;font-size:11.5px;color:var(--gp-muted);min-width:0}
+/* 底部信息条：下次调价（左） + 更新时间（右）；字号与「实时油价一览」副标题对齐（12.5px） */
+.foot2{display:flex;justify-content:flex-start;align-items:center;flex-wrap:wrap;gap:6px 16px;
+  margin-top:14px;font-size:12.5px;color:var(--gp-muted);min-width:0}
 .foot2 > span{white-space:nowrap;min-width:0}
 /* 第一段抢右侧剩余空间 → 单行时天然形成两端分布；仅当真正放不下才由 flex-wrap 折行 */
 .foot2 .next{margin-right:auto}
-/* 下次调价：红加粗（沿用旧版强调，提示调价节点） */
+/* 下次调价：红加粗（提示调价节点） */
 .foot2 .next b{color:var(--gp-up);font-weight:800}
-/* 更新时间：加粗标橙，作为底部时间信息的重点 */
+/* 更新时间：橙加粗，作为底部时间信息重点 */
 .foot2 .upd b{color:#f59e0b;font-weight:800}
 
 .empty{padding:22px;text-align:center;color:var(--gp-muted);font-size:13px}
@@ -116,9 +116,6 @@ const BASE_CSS = `
   .tile .v{font-size:clamp(15px,5.6cqw,27px);margin-top:clamp(4px,1.8cqw,7px)}
   .tile .u{font-size:clamp(9px,2.6cqw,11px)}
   .grid{gap:clamp(6px,2.6cqw,10px)}
-  .foot2{font-size:clamp(10px,2.7cqw,11.5px)}
-  .foot2 .next b{font-size:clamp(10.5px,2.9cqw,12px)}
-  .foot2 .upd b{font-size:clamp(10.5px,2.9cqw,12px)}
 }
 /* 仅极窄卡片（内容宽 ≤280px，约等于卡片宽 ≤322px）才折行，且两段各自右对齐 */
 @container (max-width:280px){
