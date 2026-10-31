@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.5";
+const GP_VERSION = "v1.0.6";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -94,12 +94,28 @@ const BASE_CSS = `
 
 .empty{padding:22px;text-align:center;color:var(--gp-muted);font-size:13px}
 
+/* 结构全端统一：四档油价任何宽度都是一行 4 列，不再折成 2×2 */
+/* 旧浏览器兜底：按视口收字号，保证不越界 */
+@media(max-width:520px){
+  .tile .g{font-size:10.5px}
+  .tile .v{font-size:18px}
+  .tile .u{font-size:9.5px}
+  .grid{gap:6px}
+}
 @media(max-width:430px){
-  .grid{grid-template-columns:repeat(2,1fr)}
-  .panel{grid-template-columns:1fr}
   /* 移动端保持与桌面端完全一致的按钮/图标尺寸比例，不缩放 */
   .refresh{width:42px;height:42px;min-width:42px;min-height:42px}
   .refresh .ri{width:24px;height:24px}
+}
+
+/* 现代浏览器：字号随卡片自身宽度平滑自适应（容器查询），4 列永远刚好放得下 */
+.wrap{container-type:inline-size}
+@supports (container-type:inline-size){
+  .tile{padding:clamp(9px,3.4cqw,13px) clamp(5px,2.6cqw,10px) clamp(8px,3.2cqw,12px)}
+  .tile .g{font-size:clamp(9.5px,3cqw,12.5px);letter-spacing:clamp(0px,.3cqw,.3px)}
+  .tile .v{font-size:clamp(15px,5.6cqw,27px);margin-top:clamp(4px,1.8cqw,7px)}
+  .tile .u{font-size:clamp(9px,2.6cqw,11px)}
+  .grid{gap:clamp(6px,2.6cqw,10px)}
 }
 `;
 
