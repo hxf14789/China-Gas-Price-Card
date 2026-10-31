@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.6";
+const GP_VERSION = "v1.0.7";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -81,16 +81,14 @@ const BASE_CSS = `
   overflow:hidden;overflow-wrap:anywhere}
 .trend .tip b{color:var(--gp-text);font-weight:700}
 
-/* 调价信息面板（上下两行，各占满整行） */
-.panel{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
-.cell{background:var(--gp-panel);border-radius:14px;padding:11px 13px;min-width:0;overflow:hidden}
-.cell .lab{font-size:12px;color:var(--gp-muted)}
-.cell .val{font-size:15px;font-weight:700;margin-top:4px;color:var(--gp-text);line-height:1.4;
-  white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
-.cell .val.warn{color:var(--gp-up)}
-
-.foot{display:flex;justify-content:flex-start;align-items:center;
-  margin-top:14px;font-size:11.5px;color:var(--gp-muted)}
+/* 底部信息条：下次调价（左） + 更新时间（右），屏幕允许时同一行、两端分布 */
+.foot2{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 16px;
+  margin-top:14px;font-size:11.5px;color:var(--gp-muted);min-width:0}
+.foot2 > span{white-space:nowrap;min-width:0}
+/* 下次调价：红加粗（沿用旧版强调，提示调价节点） */
+.foot2 .next b{color:var(--gp-up);font-weight:800}
+/* 更新时间：加粗标橙，作为底部时间信息的重点 */
+.foot2 .upd b{color:#f59e0b;font-weight:800}
 
 .empty{padding:22px;text-align:center;color:var(--gp-muted);font-size:13px}
 
@@ -116,6 +114,14 @@ const BASE_CSS = `
   .tile .v{font-size:clamp(15px,5.6cqw,27px);margin-top:clamp(4px,1.8cqw,7px)}
   .tile .u{font-size:clamp(9px,2.6cqw,11px)}
   .grid{gap:clamp(6px,2.6cqw,10px)}
+  .foot2{font-size:clamp(10px,2.7cqw,11.5px)}
+  .foot2 .next b{font-size:clamp(10.5px,2.9cqw,12px)}
+  .foot2 .upd b{font-size:clamp(10.5px,2.9cqw,12px)}
+}
+/* 窄卡片放不下一行时：两段各占一行、统一右对齐、两端对齐 */
+@container (max-width:440px){
+  .foot2{justify-content:flex-end;gap:4px}
+  .foot2 > span{flex:1 1 100%;text-align:right;white-space:normal}
 }
 `;
 
@@ -187,6 +193,27 @@ function gpCleanNextTime(s) {
     .trim();
   return cleaned || s;
 }
+/* 统一日期时间格式：把「下次调价」等中文日期与「更新时间」统一成
+ * YYYY-MM-DD HH:mm（与集成里 update_time 的风格一致），秒数统一舍去。
+ * 例：'2026年11月12日 24:00' → '2026-11-12 24:00'
+ *     '2026-10-31 02:18:03' → '2026-10-31 02:18'
+ * 解析失败时原样返回，保证不报错。
+ */
+function gpNormalizeDate(s) {
+  if (!s) return s;
+  const t = String(s).trim();
+  let y, m, d;
+  const cn = t.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?/);
+  const en = t.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (cn) { y = cn[1]; m = cn[2]; d = cn[3]; }
+  else if (en) { y = en[1]; m = en[2]; d = en[3]; }
+  else return s;
+  let hh = "00", mm = "00";
+  const tm = t.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (tm) { hh = tm[1]; mm = tm[2]; }
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${y}-${pad(m)}-${pad(d)} ${pad(hh)}:${pad(mm)}`;
+}
 
 /* ============== 卡片类 ============== */
 class GasPriceCard extends HTMLElement {
@@ -254,8 +281,8 @@ class GasPriceCard extends HTMLElement {
     const trendRaw = gpStr(hass, gpSensorOf(acc, "trend"));
     const trend = gpTrendInfo(trendRaw);
     const tips = gpStr(hass, gpSensorOf(acc, "tips"));
-    const nextTime = gpCleanNextTime(gpStr(hass, gpSensorOf(acc, "time")));
-    const updateTime = gpStr(hass, gpSensorOf(acc, "update_time"));
+    const nextTime = gpNormalizeDate(gpCleanNextTime(gpStr(hass, gpSensorOf(acc, "time"))));
+    const updateTime = gpNormalizeDate(gpStr(hass, gpSensorOf(acc, "update_time")));
 
     const tiles = [
       { label: "92#汽油", val: gas92, color: "#ff7a45" },
@@ -272,10 +299,6 @@ class GasPriceCard extends HTMLElement {
     const tipHtml = tips
       ? `<div class="tip">调价提示：<b>${tips}</b></div>`
       : `<div class="tip">数据来自「${region}」油价集成，价格单位为元/升</div>`;
-
-    const nextTimeHtml = nextTime
-      ? `<div class="val warn">${nextTime}</div>`
-      : `<div class="val">--</div>`;
 
     this.shadowRoot.innerHTML = `
       <style>${BASE_CSS}</style>
@@ -302,15 +325,9 @@ class GasPriceCard extends HTMLElement {
           ${tipHtml}
         </div>
 
-        <div class="panel">
-          <div class="cell">
-            <div class="lab">下次调价</div>
-            ${nextTimeHtml}
-          </div>
-        </div>
-
-        <div class="foot">
-          <span>更新时间：${updateTime || "--"}</span>
+        <div class="foot2">
+          <span class="next">下次调价：<b>${nextTime || "--"}</b></span>
+          <span class="upd">更新时间：<b>${updateTime || "--"}</b></span>
         </div>
       </div>`;
 
