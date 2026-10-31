@@ -13,7 +13,7 @@
  *   - setConfig / set hass 两个必需接口
  */
 
-const GP_VERSION = "v1.0.7";
+const GP_VERSION = "v1.0.8";
 
 /* ============== 主题变量（跟随 HA 主题） ============== */
 const BASE_CSS = `
@@ -82,9 +82,11 @@ const BASE_CSS = `
 .trend .tip b{color:var(--gp-text);font-weight:700}
 
 /* 底部信息条：下次调价（左） + 更新时间（右），屏幕允许时同一行、两端分布 */
-.foot2{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 16px;
+.foot2{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:6px 10px;
   margin-top:14px;font-size:11.5px;color:var(--gp-muted);min-width:0}
 .foot2 > span{white-space:nowrap;min-width:0}
+/* 第一段抢右侧剩余空间 → 单行时天然形成两端分布；仅当真正放不下才由 flex-wrap 折行 */
+.foot2 .next{margin-right:auto}
 /* 下次调价：红加粗（沿用旧版强调，提示调价节点） */
 .foot2 .next b{color:var(--gp-up);font-weight:800}
 /* 更新时间：加粗标橙，作为底部时间信息的重点 */
@@ -118,10 +120,10 @@ const BASE_CSS = `
   .foot2 .next b{font-size:clamp(10.5px,2.9cqw,12px)}
   .foot2 .upd b{font-size:clamp(10.5px,2.9cqw,12px)}
 }
-/* 窄卡片放不下一行时：两段各占一行、统一右对齐、两端对齐 */
-@container (max-width:440px){
-  .foot2{justify-content:flex-end;gap:4px}
+/* 仅极窄卡片（内容宽 ≤280px，约等于卡片宽 ≤322px）才折行，且两段各自右对齐 */
+@container (max-width:280px){
   .foot2 > span{flex:1 1 100%;text-align:right;white-space:normal}
+  .foot2 .next{margin-right:0}
 }
 `;
 
